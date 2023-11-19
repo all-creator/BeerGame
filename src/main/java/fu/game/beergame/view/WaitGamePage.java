@@ -12,6 +12,7 @@ import fu.game.beergame.common.TypeOfPlayer;
 import fu.game.beergame.model.Player;
 import fu.game.beergame.service.PlayerService;
 import fu.game.beergame.service.SessionService;
+import fu.game.beergame.utils.Broadcaster;
 import fu.game.beergame.view.component.GameLobby;
 import fu.game.beergame.view.component.Header;
 
@@ -31,10 +32,15 @@ public class WaitGamePage extends GameLobby {
         setJustifyContentMode(JustifyContentMode.CENTER);
         FormLayout formLayout = new FormLayout(new H1("Game " + session.getCode()));
         Select<TypeOfPlayer> sel = new Select<>();
-        var createButton = new Button("Ready", e -> onPlayerConnected(new Player()));
+        var readyButton = new Button("Ready", e -> onPlayerConnected(new Player()));
+        var leaveButton = new Button("Leave", e -> {
+            Broadcaster.broadcast("Player " + player.getUsername() + " left the room");
+            getUI().ifPresent(ui -> ui.navigate(""));
+        });
+        leaveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
         sel.setItems(TypeOfPlayer.values());
-        createButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-        formLayout.add(sel, createButton);
+        readyButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+        formLayout.add(sel, readyButton, leaveButton);
         setAlignSelf(Alignment.CENTER, formLayout);
         add(formLayout);
     }

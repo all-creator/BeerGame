@@ -6,7 +6,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 public class Header extends AppLayout {
     public Header() {
-        var s = new Span("v0.0.37");
+        var s = new Span("v0.0.45");
         s.getStyle().set("color", "#999");
         s.getStyle().set("font-size", "10px");
         HorizontalLayout head = new HorizontalLayout(s);

@@ -6,7 +6,6 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.shared.Registration;
 import fu.game.beergame.common.TypeOfPlayer;
-import fu.game.beergame.exceptions.GameException;
 import fu.game.beergame.model.Player;
 import fu.game.beergame.model.Session;
 import fu.game.beergame.service.PlayerService;

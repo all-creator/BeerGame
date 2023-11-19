@@ -26,6 +26,9 @@ public class Player {
 
     private String username;
 
+    @Transient
+    private boolean isReady;
+
     @Enumerated(EnumType.STRING)
     private TypeOfPlayer type;
 }
