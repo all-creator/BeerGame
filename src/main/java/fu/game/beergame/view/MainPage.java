@@ -7,6 +7,7 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import fu.game.beergame.exceptions.FieldsValidationError;
@@ -20,13 +21,14 @@ import fu.game.beergame.utils.NotificationUtils;
 import fu.game.beergame.view.component.Header;
 import fu.game.beergame.view.component.Lobby;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+import java.util.Map;
 
 @Getter
-@Route(value = "", layout = Header.class)
 @AnonymousAllowed
 @PageTitle("Start Game | Beer Game")
-@Slf4j
+@Route(value = "", layout = Header.class)
 public class MainPage extends Lobby {
 
     // Components
@@ -38,7 +40,6 @@ public class MainPage extends Lobby {
 
     public MainPage(PlayerService playerService, SessionService sessionService) {
         super(playerService, sessionService);
-
         // Layout setup
         setHeightFull();
         setWidthFull();
@@ -46,8 +47,8 @@ public class MainPage extends Lobby {
         formLayout = new FormLayout(new H1("Beer Game"));
         username = new TextField("Username");
         code = new TextField("Code to join");
-        joinButton = new Button("Join to room");
-        createButton = new Button("Create new room");
+        joinButton = new Button("Join to room", this::connectToSession);
+        createButton = new Button("Create new room", this::createNewSession);
         username.setRequired(true);
         username.setAutofocus(true);
         joinButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
@@ -58,10 +59,6 @@ public class MainPage extends Lobby {
         formLayout.setMaxWidth("500px");
         setAlignSelf(Alignment.CENTER, formLayout);
         add(formLayout);
-
-        // button setup
-        joinButton.addClickListener(this::connectToSession);
-        createButton.addClickListener(this::createNewSession);
     }
 
     private void connectToSession(ClickEvent<Button> event) {
@@ -76,10 +73,13 @@ public class MainPage extends Lobby {
                 case INITIALIZED -> throw new SessionError("Session not initialized yet");
                 case STARTED -> throw new SessionError("Session already started");
                 case FINISHED -> throw new SessionError("Session already finished");
+                case CLOSED -> throw new SessionError("Session closed");
                 case READY_TO_CONNECT -> {
                     sessionService.connectToSession(session, new Player(username.getValue()));
-                    log.info("Player {} joined to session {}", username.getValue(), session.getId());
-                    getUI().ifPresent(ui -> ui.navigate("wait/" + session.getId()));
+                    getUI().ifPresent(ui -> ui.navigate(
+                            "wait/" + session.getId(),
+                            new QueryParameters(Map.of("player", List.of(username.getValue())))
+                    ));
                     NotificationUtils.notifySuccess("Successfully joined");
                 }
             }
@@ -96,6 +96,9 @@ public class MainPage extends Lobby {
     private void createNewSession(ClickEvent<Button> event) {
         if (username.isEmpty()) return;
         final Session session = sessionService.createSession(new Player(username.getValue()));
-        getUI().ifPresent(ui -> ui.navigate("create/" + session.getId()));
+        getUI().ifPresent(ui -> ui.navigate(
+                "create/" + session.getId(),
+                new QueryParameters(Map.of("player", List.of(username.getValue())))
+        ));
     }
 }

@@ -45,4 +45,14 @@ public class Session {
         player.setSession(this);
         players.add(player);
     }
+
+    public void disconnectPlayer(Player player) {
+        player.setSession(null);
+        players.remove(player);
+    }
+
+    public void close() {
+        getPlayers().forEach(this::disconnectPlayer);
+        setStatus(SessionStatus.CLOSED);
+    }
 }

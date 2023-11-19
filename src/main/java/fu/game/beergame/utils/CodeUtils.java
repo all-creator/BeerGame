@@ -6,13 +6,15 @@ import java.util.Set;
 
 public class CodeUtils {
 
-    private final static Set<Integer> cash = new HashSet<>();
-    private final static Random R = new Random();
+    private CodeUtils() {}
+
+    private static final Set<Integer> cash = new HashSet<>();
+    private static final Random R = new Random();
 
     public static int getCode() {
-        int code = R.nextInt(8999999) + 1000000;
+        int code = R.nextInt(899999) + 100000;
         while(cash.contains(code)) {
-            code = R.nextInt(8999999) + 1000000;
+            code = R.nextInt(899999) + 100000;
         }
         cash.add(code);
         return code;

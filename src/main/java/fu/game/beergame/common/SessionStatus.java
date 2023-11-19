@@ -4,5 +4,6 @@ public enum SessionStatus {
     INITIALIZED,
     READY_TO_CONNECT,
     STARTED,
-    FINISHED
+    FINISHED,
+    CLOSED
 }

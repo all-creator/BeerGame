@@ -1,5 +1,6 @@
 package fu.game.beergame.view;
 
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -14,21 +15,29 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import fu.game.beergame.common.SessionStatus;
+import fu.game.beergame.exceptions.FieldsValidationError;
+import fu.game.beergame.exceptions.GameException;
 import fu.game.beergame.model.Player;
 import fu.game.beergame.service.PlayerService;
 import fu.game.beergame.service.SessionService;
 import fu.game.beergame.utils.Broadcaster;
+import fu.game.beergame.utils.NotificationUtils;
 import fu.game.beergame.view.component.GameLobby;
 import fu.game.beergame.view.component.Header;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-@Route(value = "create", layout = Header.class)
+@Slf4j
+@Getter
 @AnonymousAllowed
 @PageTitle("Start Game | Beer Game")
-@Slf4j
+@Route(value = "create", layout = Header.class)
 public class CreateGame extends GameLobby {
+    // Component's
     private VerticalLayout layout;
-    Dialog dialog;
+    private Dialog dialog;
+    private FormLayout formLayout;
+    private Button createButton;
 
     protected CreateGame(PlayerService playerService, SessionService sessionService) {
         super(playerService, sessionService);
@@ -36,11 +45,12 @@ public class CreateGame extends GameLobby {
 
     @Override
     protected void addUI() {
+        // Add UI
         setHeightFull();
         setWidthFull();
         setJustifyContentMode(JustifyContentMode.CENTER);
-        FormLayout formLayout = new FormLayout(new H1("Create Game"), new Span("User game code is: "+session.getCode()));
-        var createButton = new Button("Create game", e -> startGame());
+        formLayout = new FormLayout(new H1("Create Game"), new Span("Your game code is: "+session.getCode()));
+        createButton = new Button("Create game", this::startGame);
         formLayout.setColspan(createButton, 2);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2));
         formLayout.setColspan(sel, 2);
@@ -50,53 +60,56 @@ public class CreateGame extends GameLobby {
         add(formLayout);
     }
 
-    public void startGame() {
-        session = sessionService.getSession(gameUuid);
-        layout = new VerticalLayout();
-        dialog = new Dialog();
-        Player player = session.getPlayers().iterator().next();
-        session.setStatus(SessionStatus.READY_TO_CONNECT);
-        player.setType(sel.getValue());
-        sessionService.save(session);
-        playerService.save(player);
+    public void startGame(ClickEvent<Button> event) {
+        try {
+            // Fields validation
+            if (sel.isEmpty()) throw new FieldsValidationError("Select player type");
+            // Open Session
+            sessionService.openSession(session, player);
+            player.setType(sel.getValue());
+            playerService.save(player);
+            // Add and configure UI
+            layout = new VerticalLayout();
+            dialog = new Dialog();
 
-        dialog.setMaxHeight("70%");
-        dialog.setMaxWidth("70%");
-        dialog.setMinHeight("50%");
-        dialog.setMinWidth("50%");
+            dialog.setMaxHeight("70%");
+            dialog.setMaxWidth("70%");
+            dialog.setMinHeight("50%");
+            dialog.setMinWidth("50%");
 
-        dialog.setHeaderTitle(player.getType().name());
-        dialog.getHeader().add(player.getType().icon);
-        dialog.getHeader().add(new Button(VaadinIcon.CLOSE.create(), e -> closeGame()));
+            dialog.setHeaderTitle(player.getType().name());
+            dialog.getHeader().add(player.getType().icon);
+            dialog.getHeader().add(new Button(VaadinIcon.CLOSE.create(), this::closeGame));
 
-        layout.setMargin(true);
-        layout.add(new H4("Game code is: " + session.getCode()));
-        layout.add(new Span("Описание ("+ player.getType().displayName+"):"));
-        layout.add(new Span(player.getType().description));
+            layout.setMargin(true);
+            layout.add(new H4("Game code is: " + session.getCode()));
+            layout.add(new Span("Описание (" + player.getType().displayName + "):"));
+            layout.add(new Span(player.getType().description));
 
-        layout.add(new Span("Ожидание игроков:"));
+            layout.add(new Span("Ожидание игроков:"));
+            layout.add(new Span(session.getPlayers().size() + "/4"));
 
-        var count = new Span(session.getPlayers().size() + "/4");
-        layout.add(count);
-        ProgressBar progressBar = new ProgressBar();
-        progressBar.setIndeterminate(true);
+            ProgressBar progressBar = new ProgressBar();
+            progressBar.setIndeterminate(true);
 
-        dialog.add(layout);
-        dialog.add(progressBar);
-        dialog.open();
+            dialog.add(layout);
+            dialog.add(progressBar);
+            dialog.open();
 
-        dialog.setCloseOnOutsideClick(false);
+            dialog.setCloseOnOutsideClick(false);
 
-        broadcasterRegistration = Broadcaster.register(newMessage -> getUI().ifPresent(ui -> ui.access(() -> {
-            log.info("Update players");
-            layout.getChildren().filter(Span.class::isInstance).filter(e -> ((Span) e).getText().endsWith("/4")).findFirst().ifPresent(e -> ((Span) e).setText(sessionService.getSession(gameUuid).getPlayers().size() + "/4"));
-        })));
+            // Register Broadcaster
+            broadcasterRegistration = Broadcaster.register(newMessage -> getUI().ifPresent(ui -> ui.access(() -> {
+                log.info("New Broadcaster message: {}", newMessage);
+                layout.getChildren().filter(Span.class::isInstance).filter(e -> ((Span) e).getText().endsWith("/4")).findFirst().ifPresent(e -> ((Span) e).setText(sessionService.getSession(gameUuid).getPlayers().size() + "/4"));
+            })));
+        } catch (GameException e) {
+            NotificationUtils.notifyError(e.getMessage());
+        }
     }
 
-    public void closeGame() {
-        session.setStatus(SessionStatus.INITIALIZED);
-        sessionService.save(session);
-
+    public void closeGame(ClickEvent<Button> event) {
+        sessionService.closeSession(session);
         dialog.close();
     }
 }
