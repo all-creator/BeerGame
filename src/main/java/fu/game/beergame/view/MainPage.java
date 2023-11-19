@@ -1,43 +1,53 @@
 package fu.game.beergame.view;
 
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import fu.game.beergame.exceptions.FieldsValidationError;
+import fu.game.beergame.exceptions.GameException;
+import fu.game.beergame.exceptions.SessionError;
 import fu.game.beergame.model.Player;
+import fu.game.beergame.model.Session;
 import fu.game.beergame.service.PlayerService;
 import fu.game.beergame.service.SessionService;
+import fu.game.beergame.utils.NotificationUtils;
 import fu.game.beergame.view.component.Header;
+import fu.game.beergame.view.component.Lobby;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+@Getter
 @Route(value = "", layout = Header.class)
 @AnonymousAllowed
 @PageTitle("Start Game | Beer Game")
 @Slf4j
-public class MainPage extends VerticalLayout {
+public class MainPage extends Lobby {
 
-    private final PlayerService playerService;
-    private final SessionService sessionService;
-
+    // Components
+    private final FormLayout formLayout;
+    private final TextField username;
+    private final TextField code;
+    private final Button joinButton;
+    private final Button createButton;
 
     public MainPage(PlayerService playerService, SessionService sessionService) {
-        this.playerService = playerService;
-        this.sessionService = sessionService;
+        super(playerService, sessionService);
+
+        // Layout setup
         setHeightFull();
         setWidthFull();
         setJustifyContentMode(JustifyContentMode.CENTER);
-        FormLayout formLayout = new FormLayout(new H1("Beer Game"));
-        var username = new TextField("Username");
-        var code = new TextField("Code to join");
-        var joinButton = new Button("Join to room");
-        var createButton = new Button("Create new room");
+        formLayout = new FormLayout(new H1("Beer Game"));
+        username = new TextField("Username");
+        code = new TextField("Code to join");
+        joinButton = new Button("Join to room");
+        createButton = new Button("Create new room");
         username.setRequired(true);
         username.setAutofocus(true);
         joinButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
@@ -49,38 +59,43 @@ public class MainPage extends VerticalLayout {
         setAlignSelf(Alignment.CENTER, formLayout);
         add(formLayout);
 
-        joinButton.addClickListener(e -> {
-            if (username.isEmpty() || code.isEmpty()) return;
-            var session = sessionService.getSession(Integer.parseInt(code.getValue()));
+        // button setup
+        joinButton.addClickListener(this::connectToSession);
+        createButton.addClickListener(this::createNewSession);
+    }
+
+    private void connectToSession(ClickEvent<Button> event) {
+        // Check form fields
+        if (code.isEmpty()) throw new FieldsValidationError("Code is not entered");
+        if (username.isEmpty()) throw new FieldsValidationError("Username is not entered");
+        // Check session
+        try {
+            final Session session = sessionService.getSession(Integer.parseInt(code.getValue()));
+            if (session.getPlayers().size() == 4) throw new SessionError("Session is full");
             switch (session.getStatus()) {
-                case INITIALIZED -> {
-                    var n = Notification.show("Session not initialized yet");
-                    n.addThemeVariants(NotificationVariant.LUMO_ERROR);
-                }
-                case STARTED -> {
-                    var n = Notification.show("Session already started");
-                    n.addThemeVariants(NotificationVariant.LUMO_ERROR);
-                }
-                case FINISHED -> {
-                    var n = Notification.show("Session already finished");
-                    n.addThemeVariants(NotificationVariant.LUMO_ERROR);
-                }
+                case INITIALIZED -> throw new SessionError("Session not initialized yet");
+                case STARTED -> throw new SessionError("Session already started");
+                case FINISHED -> throw new SessionError("Session already finished");
                 case READY_TO_CONNECT -> {
-                    var player = new Player(username.getValue());
-                    player.setSession(session);
-                    playerService.save(player);
-                    session.getPlayers().add(player);
-                    log.info("Player {} joined to session {}", player.getUsername(), session.getId());
-                    sessionService.save(session);
-                    CreateGame.games.get(session.getId().toString()).updatePlayers();
+                    sessionService.connectToSession(session, new Player(username.getValue()));
+                    log.info("Player {} joined to session {}", username.getValue(), session.getId());
                     getUI().ifPresent(ui -> ui.navigate("wait/" + session.getId()));
+                    NotificationUtils.notifySuccess("Successfully joined");
                 }
             }
-        });
-        createButton.addClickListener(e -> {
-            if (username.isEmpty()) return;
-            var session = sessionService.createSession(new Player(username.getValue()));
-            getUI().ifPresent(ui -> ui.navigate("create/" + session.getId()));
-        });
+        } catch (NumberFormatException ignore) {
+            NotificationUtils.notifyError("Code must contain only digits");
+        } catch (GameException e) {
+            NotificationUtils.notifyError(e.getMessage());
+        }
+        catch (RuntimeException e) {
+            NotificationUtils.notifyError("Not caught error: " + e.getMessage());
+        }
+    }
+
+    private void createNewSession(ClickEvent<Button> event) {
+        if (username.isEmpty()) return;
+        final Session session = sessionService.createSession(new Player(username.getValue()));
+        getUI().ifPresent(ui -> ui.navigate("create/" + session.getId()));
     }
 }

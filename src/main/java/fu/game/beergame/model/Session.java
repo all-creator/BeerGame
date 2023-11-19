@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Fetch;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -41,4 +40,9 @@ public class Session {
 
     @CreationTimestamp
     LocalDateTime createdAt;
+
+    public void connectPlayer(Player player) {
+        player.setSession(this);
+        players.add(player);
+    }
 }
