@@ -19,6 +19,8 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import fu.game.beergame.common.BroadcasterCommand;
+import fu.game.beergame.common.SupportMessage;
 import fu.game.beergame.common.TypeOfPlayer;
 import fu.game.beergame.exceptions.FieldsValidationError;
 import fu.game.beergame.exceptions.GameException;
@@ -32,6 +34,7 @@ import fu.game.beergame.view.component.GameLobby;
 import fu.game.beergame.view.component.Header;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Slf4j
 @Getter
@@ -86,7 +89,7 @@ public class CreateGame extends GameLobby {
             layout.setMargin(true);
 
             dialog = new Dialog();
-            dialog.setMaxHeight("75%");
+            dialog.setMaxHeight("80%");
             dialog.setMaxWidth("75%");
             dialog.setMinHeight("50%");
             dialog.setMinWidth("50%");
@@ -101,7 +104,7 @@ public class CreateGame extends GameLobby {
             scroller = new Scroller(scrollerLayout);
             scroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
             scroller.setWidthFull();
-            scroller.setMaxHeight("80px");
+            scroller.setMaxHeight("100px");
 
             ProgressBar progressBar = new ProgressBar();
             progressBar.setIndeterminate(true);
@@ -120,6 +123,10 @@ public class CreateGame extends GameLobby {
 
             final Span playerReadyCount = new Span("Ожидание игроков: " + session.getPlayers().stream().filter(Player::isReady).count() + "/4");
             playerReadyCount.setId("player-ready-count");
+
+            final Span supportMessage = new Span("Подсказка: " + SupportMessage.getRandom().getText());
+            supportMessage.setId("support-message");
+            supportMessage.getStyle().set("font-size", "11px");
 
             final Button startButton = new Button("Start Game", this::startGame);
             startButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
@@ -145,18 +152,27 @@ public class CreateGame extends GameLobby {
 
             buttonLayout.add(readyButton, startButton);
 
-            dialog.add(layout, progressBar, buttonLayout);
+            dialog.add(layout, progressBar, supportMessage, buttonLayout);
             dialog.open();
 
             // Register Broadcaster
             broadcasterRegistration = Broadcaster.register(newMessage -> getUI().ifPresent(ui -> ui.access(() -> {
-                session = sessionService.getSession(gameUuid);
-                log.info("New Broadcaster message: {}, for session: {}", newMessage, session);
-                ((Span) getComponentFromInfo("player-count")).setText("Игроков в игре: " + session.getPlayers().size() + "/4");
-                ((Span) getComponentFromInfo("player-ready-count")).setText("Ожидание игроков: " + session.getPlayers().stream().filter(Player::isReady).count() + "/4");
-                scrollerLayout.add(new Span(newMessage));
-                if (session.getPlayers().stream().filter(Player::isReady).count() == 4) startButton.setEnabled(true);
-                if (session.getPlayers().stream().filter(Player::isReady).count() < 4) startButton.setEnabled(false);
+                if (BroadcasterCommand.isCommand(newMessage)) {
+                    switch (BroadcasterCommand.getCommand(newMessage)) {
+                        case SUPPORT_MESSAGE_UPDATE -> ((Span) ComponentUtils.getComponent(dialog, "support-message"))
+                                .setText("Подсказка: " + SupportMessage.getRandom().getText());
+                    }
+                } else {
+                    session = sessionService.getSession(gameUuid);
+                    log.info("New Broadcaster message: {}, for session: {}", newMessage, session);
+                    ((Span) getComponentFromInfo("player-count")).setText("Игроков в игре: " + session.getPlayers().size() + "/4");
+                    ((Span) getComponentFromInfo("player-ready-count")).setText("Ожидание игроков: " + session.getPlayers().stream().filter(Player::isReady).count() + "/4");
+                    scrollerLayout.add(new Span(newMessage));
+                    if (session.getPlayers().stream().filter(Player::isReady).count() == 4)
+                        startButton.setEnabled(true);
+                    if (session.getPlayers().stream().filter(Player::isReady).count() < 4)
+                        startButton.setEnabled(false);
+                }
             })));
         } catch (GameException e) {
             NotificationUtils.notifyError(e.getMessage());
@@ -174,6 +190,11 @@ public class CreateGame extends GameLobby {
 
     public void playerReady(ClickEvent<Button> event) {
         playerService.ready(player, session);
+    }
+
+    @Scheduled(fixedRate = 10000L)
+    public void supportUpdate() {
+        if (dialog != null) Broadcaster.broadcast(BroadcasterCommand.SUPPORT_MESSAGE_UPDATE);
     }
 
     private Component getComponentFromInfo(String id) {

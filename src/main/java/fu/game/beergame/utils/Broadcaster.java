@@ -1,6 +1,7 @@
 package fu.game.beergame.utils;
 
 import com.vaadin.flow.shared.Registration;
+import fu.game.beergame.common.BroadcasterCommand;
 
 import java.util.LinkedList;
 import java.util.concurrent.Executor;
@@ -30,5 +31,9 @@ public class Broadcaster {
         for (Consumer<String> listener : listeners) {
             executor.execute(() -> listener.accept(message));
         }
+    }
+
+    public static synchronized void broadcast(BroadcasterCommand command) {
+        broadcast(command.getCommand());
     }
 }
