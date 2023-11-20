@@ -7,7 +7,7 @@ import lombok.*;
 @Getter
 @Setter
 @Entity
-@ToString
+@ToString(exclude = "session")
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "players")
@@ -26,7 +26,6 @@ public class Player {
 
     private String username;
 
-    @Transient
     private boolean isReady;
 
     @Enumerated(EnumType.STRING)

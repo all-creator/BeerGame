@@ -2,10 +2,7 @@ package fu.game.beergame.model;
 
 import fu.game.beergame.common.SessionStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -15,6 +12,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@ToString
 @Table(name = "session")
 @AllArgsConstructor
 @NoArgsConstructor
@@ -54,5 +52,10 @@ public class Session {
     public void close() {
         getPlayers().forEach(this::disconnectPlayer);
         setStatus(SessionStatus.CLOSED);
+    }
+
+    public void updatePlayer(Player player) {
+        players.remove(players.stream().filter(p -> p.getUsername().equals(player.getUsername())).findFirst().orElse(null));
+        players.add(player);
     }
 }

@@ -15,9 +15,11 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+import fu.game.beergame.common.TypeOfPlayer;
 import fu.game.beergame.exceptions.FieldsValidationError;
 import fu.game.beergame.exceptions.GameException;
 import fu.game.beergame.model.Player;
@@ -39,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CreateGame extends GameLobby {
     // Component's
     private VerticalLayout layout;
+    private final Select<TypeOfPlayer> sel = new Select<>();
     private Dialog dialog;
     private FormLayout formLayout;
     private Button createButton;
@@ -55,7 +58,7 @@ public class CreateGame extends GameLobby {
         setHeightFull();
         setWidthFull();
         setJustifyContentMode(JustifyContentMode.CENTER);
-        formLayout = new FormLayout(new H1("Create Game"), new Span("Your game code is: "+session.getCode()));
+        formLayout = new FormLayout(new H1("Create Game"), new Span("Your lobby code is: "+session.getCode()));
         createButton = new Button("Create game", this::openConfigGameModal);
         formLayout.setColspan(createButton, 2);
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2));
@@ -64,6 +67,11 @@ public class CreateGame extends GameLobby {
         formLayout.add(sel, createButton);
         setAlignSelf(Alignment.CENTER, formLayout);
         add(formLayout);
+    }
+
+    @Override
+    protected Select<TypeOfPlayer> getSelect() {
+        return sel;
     }
 
     public void openConfigGameModal(ClickEvent<Button> event) {
@@ -93,7 +101,7 @@ public class CreateGame extends GameLobby {
             scroller = new Scroller(scrollerLayout);
             scroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
             scroller.setWidthFull();
-            scroller.setMaxHeight("90px");
+            scroller.setMaxHeight("80px");
 
             ProgressBar progressBar = new ProgressBar();
             progressBar.setIndeterminate(true);
@@ -124,16 +132,16 @@ public class CreateGame extends GameLobby {
             readyButton.setDisableOnClick(true);
 
             dialog.setHeaderTitle(player.getType().name());
-            dialog.getHeader().add(player.getType().icon, new Button(VaadinIcon.CLOSE.create(), this::closeGame));
+            dialog.getHeader().add(player.getType().create(), new Button(VaadinIcon.CLOSE.create(), this::closeGame));
 
             scrollerLayout.add(new Span("Player " + player.getUsername() + " init game session: " + session.getId()));
 
             infoLayout.add(playerCount, playerReadyCount);
 
-            layout.add(new H4("Game code is: " + session.getCode()));
+            layout.add(new H4("Lobby code is: " + session.getCode()));
             layout.add(new Span("Описание (" + player.getType().displayName + "):"));
             layout.add(new Span(player.getType().description));
-            layout.add(infoLayout, new H5("Game Log's:"), scroller);
+            layout.add(infoLayout, new H5("Lobby Log's:"), scroller);
 
             buttonLayout.add(readyButton, startButton);
 
@@ -142,11 +150,13 @@ public class CreateGame extends GameLobby {
 
             // Register Broadcaster
             broadcasterRegistration = Broadcaster.register(newMessage -> getUI().ifPresent(ui -> ui.access(() -> {
-                log.info("New Broadcaster message: {}", newMessage);
-                ((Span) getComponentFromInfo("player-count")).setText("Игроков в игре: " + sessionService.getSession(gameUuid).getPlayers().size() + "/4");
-                ((Span) getComponentFromInfo("player-ready-count")).setText("Ожидание игроков: " + sessionService.getSession(gameUuid)
-                        .getPlayers().stream().filter(Player::isReady).count() + "/4");
+                session = sessionService.getSession(gameUuid);
+                log.info("New Broadcaster message: {}, for session: {}", newMessage, session);
+                ((Span) getComponentFromInfo("player-count")).setText("Игроков в игре: " + session.getPlayers().size() + "/4");
+                ((Span) getComponentFromInfo("player-ready-count")).setText("Ожидание игроков: " + session.getPlayers().stream().filter(Player::isReady).count() + "/4");
                 scrollerLayout.add(new Span(newMessage));
+                if (session.getPlayers().stream().filter(Player::isReady).count() == 4) startButton.setEnabled(true);
+                if (session.getPlayers().stream().filter(Player::isReady).count() < 4) startButton.setEnabled(false);
             })));
         } catch (GameException e) {
             NotificationUtils.notifyError(e.getMessage());
@@ -159,17 +169,15 @@ public class CreateGame extends GameLobby {
     }
 
     public void startGame(ClickEvent<Button> event) {
-
+        NotificationUtils.notifyError("Soon!");
     }
 
     public void playerReady(ClickEvent<Button> event) {
-        player.setReady(true);
-        Broadcaster.broadcast("Player " + player.getUsername() + " is ready");
+        playerService.ready(player, session);
     }
 
     private Component getComponentFromInfo(String id) {
         return ComponentUtils.getComponent(layout, "info-layout", id);
     }
-
 
 }

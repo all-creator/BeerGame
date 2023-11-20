@@ -13,7 +13,6 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 import fu.game.beergame.exceptions.FieldsValidationError;
 import fu.game.beergame.exceptions.GameException;
 import fu.game.beergame.exceptions.SessionError;
-import fu.game.beergame.model.Player;
 import fu.game.beergame.model.Session;
 import fu.game.beergame.service.PlayerService;
 import fu.game.beergame.service.SessionService;
@@ -62,11 +61,12 @@ public class MainPage extends Lobby {
     }
 
     private void connectToSession(ClickEvent<Button> event) {
-        // Check form fields
-        if (code.isEmpty()) throw new FieldsValidationError("Code is not entered");
-        if (username.isEmpty()) throw new FieldsValidationError("Username is not entered");
-        // Check session
         try {
+            // Check form fields
+            if (code.isEmpty()) throw new FieldsValidationError("Code is not entered");
+            if (username.isEmpty()) throw new FieldsValidationError("Username is not entered");
+            if (playerService.find(username.getValue()).isReady()) throw new FieldsValidationError("Username is already used");
+            // Check session
             final Session session = sessionService.getSession(Integer.parseInt(code.getValue()));
             if (session.getPlayers().size() == 4) throw new SessionError("Session is full");
             switch (session.getStatus()) {
@@ -75,7 +75,7 @@ public class MainPage extends Lobby {
                 case FINISHED -> throw new SessionError("Session already finished");
                 case CLOSED -> throw new SessionError("Session closed");
                 case READY_TO_CONNECT -> {
-                    sessionService.connectToSession(session, new Player(username.getValue()));
+                    sessionService.connectToSession(session, playerService.find(username.getValue()));
                     getUI().ifPresent(ui -> ui.navigate(
                             "wait/" + session.getId(),
                             new QueryParameters(Map.of("player", List.of(username.getValue())))
@@ -95,7 +95,7 @@ public class MainPage extends Lobby {
 
     private void createNewSession(ClickEvent<Button> event) {
         if (username.isEmpty()) return;
-        final Session session = sessionService.createSession(new Player(username.getValue()));
+        final Session session = sessionService.createSession(playerService.find(username.getValue()));
         getUI().ifPresent(ui -> ui.navigate(
                 "create/" + session.getId(),
                 new QueryParameters(Map.of("player", List.of(username.getValue())))

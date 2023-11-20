@@ -19,8 +19,6 @@ import java.util.Arrays;
 public abstract class GameLobby extends Lobby implements HasUrlParameter<String> {
     protected String gameUuid;
     protected Registration broadcasterRegistration;
-
-    protected final Select<TypeOfPlayer> sel = new Select<>();
     protected transient Session session;
     protected transient Player player;
 
@@ -31,19 +29,14 @@ public abstract class GameLobby extends Lobby implements HasUrlParameter<String>
     protected abstract void addUI();
 
     protected void configureUI() {
-        var items = Arrays.stream(TypeOfPlayer.values()).filter(t -> !session.getPlayers().stream().map(Player::getType).toList().contains(t)).toList();
-        sel.setItems(items);
-        sel.setPlaceholder("Select player type");
-        sel.addValueChangeListener(this::onChangeSelect);
-        sel.setAutofocus(true);
+        getSelect().setItems(Arrays.stream(TypeOfPlayer.values()).filter(t -> !session.getPlayers().stream().map(Player::getType).toList().contains(t)).toList());
+        getSelect().setPlaceholder("Select player type");
+        getSelect().addValueChangeListener(this::onChangeSelect);
+        getSelect().setAutofocus(true);
     }
 
     protected void onChangeSelect(AbstractField.ComponentValueChangeEvent<Select<TypeOfPlayer>, TypeOfPlayer> e) {
-        if (e.getValue() != null) sel.setPrefixComponent(e.getValue().icon);
-    }
-
-    protected void onPlayerConnected(Player player) {
-        sel.setItems(Arrays.stream(TypeOfPlayer.values()).filter(t -> !session.getPlayers().stream().map(Player::getType).toList().contains(t)).toList());
+        if (e.getValue() != null) getSelect().setPrefixComponent(e.getValue().create());
     }
 
 
@@ -60,4 +53,6 @@ public abstract class GameLobby extends Lobby implements HasUrlParameter<String>
         configureUI();
         addUI();
     }
+
+    protected abstract Select<TypeOfPlayer> getSelect();
 }

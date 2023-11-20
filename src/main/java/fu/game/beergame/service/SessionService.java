@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -48,8 +47,7 @@ public class SessionService {
     }
 
     public void openSession(Session session, Player player) {
-        session.getPlayers().add(player);
-        session.setPlayers(session.getPlayers().stream().filter(p -> p.getType() != null).collect(Collectors.toSet()));
+        session.updatePlayer(player);
         player.setSession(session);
         session.setStatus(SessionStatus.READY_TO_CONNECT);
         sessionRepository.save(session);
