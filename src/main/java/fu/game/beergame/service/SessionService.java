@@ -1,6 +1,7 @@
 package fu.game.beergame.service;
 
 import fu.game.beergame.common.SessionStatus;
+import fu.game.beergame.model.Game;
 import fu.game.beergame.model.Player;
 import fu.game.beergame.model.Session;
 import fu.game.beergame.repository.SessionRepository;
@@ -41,9 +42,17 @@ public class SessionService {
         var players = session.getPlayers();
         session.close();
         sessionRepository.save(session);
-        players.forEach(playerService::save);
+        players.forEach(player -> {
+            player.setReady(false);
+            player.setType(null);
+            playerService.save(player);
+        });
         log.info("Session {} closed", session.getId());
         Broadcaster.broadcast("Session " + session.getId() + " closed");
+    }
+
+    public Game loadGame(String sessionId) {
+        return sessionRepository.findFetchGameById(UUID.fromString(sessionId)).orElseThrow().getGame();
     }
 
     public void openSession(Session session, Player player) {

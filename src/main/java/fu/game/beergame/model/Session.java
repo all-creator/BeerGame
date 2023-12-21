@@ -36,6 +36,9 @@ public class Session {
 
     SessionStatus status = SessionStatus.INITIALIZED;
 
+    @OneToOne(mappedBy = "session")
+    private Game game;
+
     @CreationTimestamp
     LocalDateTime createdAt;
 

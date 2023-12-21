@@ -4,10 +4,11 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import fu.game.beergame.BeerGameApplication;
 
 public class Header extends AppLayout {
     public Header() {
-        var version = new Span("v0.0.54-alpha");
+        var version = new Span(BeerGameApplication.VERSION);
         version.getStyle().set("color", "#999");
         version.getStyle().set("font-size", "10px");
         version.getStyle().set("margin", "1px");

@@ -1,11 +1,12 @@
 package fu.game.beergame.common;
 
+import fu.game.beergame.BeerGameApplication;
 import fu.game.beergame.utils.CodeUtils;
 import lombok.Getter;
 
 @Getter
 public enum SupportMessage {
-    VERSION("Полная текущая версия игры звучит: BeerGame v0.0.54-alpha Lobby in Alpha"),
+    VERSION("Полная текущая версия игры звучит: BeerGame " + BeerGameApplication.VERSION + " " + BeerGameApplication.RELEASE),
     DESKTOP("Удобней играть на компьютере"),
     TOOLTIPS("При наведении мышки на различные элементы в игре, будут всплывать подсказки"),
     TOOLTIPS_OFF("Всплывающие подсказки можно отключить"),
@@ -20,6 +21,6 @@ public enum SupportMessage {
     }
 
     public static SupportMessage getRandom() {
-        return SupportMessage.values()[CodeUtils.R.nextInt(SupportMessage.values().length-1)];
+        return SupportMessage.values()[CodeUtils.R.nextInt(SupportMessage.values().length)];
     }
 }
