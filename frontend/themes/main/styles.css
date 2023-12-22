@@ -1,4 +1,65 @@
+@import "theme-editor.css";
 .header {
     background-color: #fff;
+}
 
+.card {
+    box-shadow: #8f8f8f 0 0 50px;
+    border-radius: 15px;
+}
+
+.card_input {
+    width: 40%;
+    scale: 2;
+    font-size: .8em;
+}
+
+.card_anim_right {
+    animation: card_flow_to_right .5s cubic-bezier(1, 0, 1, 1);
+}
+
+.card_anim_left {
+    animation: card_flow_to_left .5s cubic-bezier(1, 0, 1, 1);
+}
+
+@keyframes card_flow_to_right {
+    0% {
+        transform: translateX(0);
+    }
+    50% {
+        transform: translateX(1000px);
+        opacity: 0;
+    }
+    51% {
+        transform: translateX(0);
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes card_flow_to_left {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        transform: translateX(0);
+        opacity: 0;
+    }
+    51% {
+        transform: translateX(1000px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-1 {
+    flex: 1;
 }

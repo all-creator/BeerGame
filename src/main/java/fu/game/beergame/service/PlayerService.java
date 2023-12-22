@@ -1,6 +1,7 @@
 package fu.game.beergame.service;
 
 
+import fu.game.beergame.common.BroadcasterCommand;
 import fu.game.beergame.model.Player;
 import fu.game.beergame.model.Session;
 import fu.game.beergame.repository.PlayerRepository;
@@ -21,14 +22,14 @@ public class PlayerService {
         session.updatePlayer(player);
         save(player);
         log.info("Player {} is ready", player.getUsername());
-        Broadcaster.broadcast("Player " + player.getUsername() + " is ready");
+        Broadcaster.broadcast(BroadcasterCommand.PLAYER_READY.getCommand() + "Player " + player.getUsername() + " is ready");
     }
 
     public void leave(Player player, Session session) {
         session.disconnectPlayer(player);
         save(player);
         log.info("Player {} left the room", player.getUsername());
-        Broadcaster.broadcast("Player " + player.getUsername() + " left the room");
+        Broadcaster.broadcast(BroadcasterCommand.PLAYER_LEFT.getCommand() +"Player " + player.getUsername() + " left the room");
     }
 
     public void save(Player player) {

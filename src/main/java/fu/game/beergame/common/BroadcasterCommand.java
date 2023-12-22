@@ -6,7 +6,15 @@ import java.util.Arrays;
 
 @Getter
 public enum BroadcasterCommand {
-    SUPPORT_MESSAGE_UPDATE("$update_support")
+    SUPPORT_MESSAGE_UPDATE("$update_support"),
+    CONSOLE_MESSAGE("$console_message@:"),
+    PLAYER_READY("$player_ready@:"),
+    PLAYER_LEFT("$player_left@:"),
+    PLAYER_JOINED("$player_joined@:"),
+    START_GAME("$start_game"),
+    NEXT_TURN("$next_turn"),
+    PAGE_RELOAD("$page_reload"),
+    NEW_WEEK("$new_week"),
     ;
     final String command;
 
@@ -19,6 +27,14 @@ public enum BroadcasterCommand {
     }
 
     public static BroadcasterCommand getCommand(String msg) {
-        return Arrays.stream(BroadcasterCommand.values()).filter(b -> b.getCommand().equals(msg)).findFirst().orElseThrow();
+        return Arrays.stream(BroadcasterCommand.values()).filter(b -> msg.startsWith(b.command)).findFirst().orElseThrow();
+    }
+
+    public static String getData(String msg) {
+        return msg.split("@:")[1];
+    }
+
+    public static boolean hasData(String msg) {
+        return msg.contains("@:");
     }
 }

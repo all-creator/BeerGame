@@ -15,4 +15,10 @@ public class NotificationUtils {
         var n = Notification.show(message);
         n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
+
+    public static void notifyMessage(String message, int time) {
+        var n = Notification.show(message);
+        n.setDuration(time);
+        n.addThemeVariants(NotificationVariant.LUMO_PRIMARY);
+    }
 }

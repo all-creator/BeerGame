@@ -17,6 +17,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import fu.game.beergame.common.BroadcasterCommand;
@@ -35,6 +36,9 @@ import fu.game.beergame.view.component.Header;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
+
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Getter
@@ -156,26 +160,30 @@ public class CreateGame extends GameLobby {
             dialog.open();
 
             // Register Broadcaster
-            broadcasterRegistration = Broadcaster.register(newMessage -> getUI().ifPresent(ui -> ui.access(() -> {
-                if (BroadcasterCommand.isCommand(newMessage)) {
-                    switch (BroadcasterCommand.getCommand(newMessage)) {
-                        case SUPPORT_MESSAGE_UPDATE -> ((Span) ComponentUtils.getComponent(dialog, "support-message"))
-                                .setText("Подсказка: " + SupportMessage.getRandom().getText());
-                    }
-                } else {
-                    session = sessionService.getSession(gameUuid);
-                    log.info("New Broadcaster message: {}, for session: {}", newMessage, session);
-                    ((Span) getComponentFromInfo("player-count")).setText("Игроков в игре: " + session.getPlayers().size() + "/4");
+            broadcasterRegistration = Broadcaster.register(newMessage -> getUI().ifPresent(ui -> ui.access(() -> onEvent(newMessage, startButton))));
+        } catch (GameException e) {
+            NotificationUtils.notifyError(e.getMessage());
+        }
+    }
+
+    private void onEvent(String message, Button startButton) {
+        session = sessionService.getSession(gameUuid);
+        log.info("New Broadcaster message: {}, for session: {}", message, session);
+        if (BroadcasterCommand.hasData(message)) scrollerLayout.add(new Span(BroadcasterCommand.getData(message)));
+        if (BroadcasterCommand.isCommand(message)) {
+            switch (BroadcasterCommand.getCommand(message)) {
+                case SUPPORT_MESSAGE_UPDATE -> ((Span) ComponentUtils.getComponent(dialog, "support-message"))
+                        .setText("Подсказка: " + SupportMessage.getRandom().getText());
+                case PLAYER_LEFT, PLAYER_JOINED -> ((Span) getComponentFromInfo("player-count")).setText("Игроков в игре: " + session.getPlayers().size() + "/4");
+                case PLAYER_READY -> {
                     ((Span) getComponentFromInfo("player-ready-count")).setText("Ожидание игроков: " + session.getPlayers().stream().filter(Player::isReady).count() + "/4");
-                    scrollerLayout.add(new Span(newMessage));
                     if (session.getPlayers().stream().filter(Player::isReady).count() == 4)
                         startButton.setEnabled(true);
                     if (session.getPlayers().stream().filter(Player::isReady).count() < 4)
                         startButton.setEnabled(false);
                 }
-            })));
-        } catch (GameException e) {
-            NotificationUtils.notifyError(e.getMessage());
+                default -> log.debug("Ignored Broadcaster command: {} as CreateGame", message);
+            }
         }
     }
 
@@ -185,7 +193,13 @@ public class CreateGame extends GameLobby {
     }
 
     public void startGame(ClickEvent<Button> event) {
-        NotificationUtils.notifyError("Soon!");
+        dialog.close();
+        sessionService.createGame(session);
+        getUI().orElseThrow().navigate(
+                "game/" + session.getId(),
+                new QueryParameters(Map.of("player", List.of(player.getUsername())))
+        );
+        Broadcaster.broadcast(BroadcasterCommand.START_GAME.getCommand());
     }
 
     public void playerReady(ClickEvent<Button> event) {
