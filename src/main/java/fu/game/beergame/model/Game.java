@@ -34,6 +34,8 @@ public class Game {
 
     private int cons;
 
+    private double lastCalcWeek = 0;
+
     @OneToMany(mappedBy = "game", fetch = FetchType.EAGER)
     private Set<Accumulator> accumulators = new HashSet<>();
 
@@ -55,8 +57,16 @@ public class Game {
         return accumulators.stream().filter(a -> a.getName().equals(name)).collect(Collectors.toSet());
     }
 
+    public StreamItem getItem(String name) {
+        return items.stream().filter(a -> a.getName().equals(name)).findFirst().orElse(null);
+    }
+
     public Player getCurrentPlayerByType() {
         return session.getPlayers().stream().filter(p -> p.getType() == currentPlayer).findFirst().orElseThrow();
+    }
+
+    public Player getPlayerByType(TypeOfPlayer type) {
+        return session.getPlayers().stream().filter(p -> p.getType() == type).findFirst().orElseThrow();
     }
 
     public void nextPlayer() {

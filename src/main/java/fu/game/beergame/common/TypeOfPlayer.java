@@ -60,4 +60,22 @@ public enum TypeOfPlayer {
             }
         };
     }
+
+    public static TypeOfPlayer getPrevious(TypeOfPlayer type) {
+        return switch (type) {
+            case SELLER -> FABRIC;
+            case PROVIDER -> SELLER;
+            case WHOLESALER -> PROVIDER;
+            case FABRIC -> WHOLESALER;
+        };
+    }
+
+    public static TypeOfPlayer getNext(TypeOfPlayer type) {
+        return switch (type) {
+            case SELLER -> PROVIDER;
+            case PROVIDER -> WHOLESALER;
+            case WHOLESALER -> FABRIC;
+            case FABRIC -> null;
+        };
+    }
 }

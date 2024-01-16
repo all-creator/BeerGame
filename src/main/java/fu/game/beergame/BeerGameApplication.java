@@ -14,8 +14,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Push(PushMode.AUTOMATIC)
 public class BeerGameApplication implements AppShellConfigurator {
 
-    public static final String VERSION = "0.0.71-alpha";
-    public static final String RELEASE = "Lobby in beta & Game in alpha";
+    public static final String VERSION = "0.0.88-beta";
+    public static final String RELEASE = "Lobby in beta & Game in beta";
 
 
     public static void main(String[] args) {

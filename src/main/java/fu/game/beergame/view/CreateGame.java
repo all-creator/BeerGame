@@ -208,7 +208,7 @@ public class CreateGame extends GameLobby {
 
     @Scheduled(fixedRate = 10000L)
     public void supportUpdate() {
-        if (dialog != null) Broadcaster.broadcast(BroadcasterCommand.SUPPORT_MESSAGE_UPDATE);
+        if (dialog != null && dialog.isOpened()) Broadcaster.broadcast(BroadcasterCommand.SUPPORT_MESSAGE_UPDATE);
     }
 
     private Component getComponentFromInfo(String id) {

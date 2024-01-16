@@ -15,6 +15,9 @@ public enum BroadcasterCommand {
     NEXT_TURN("$next_turn"),
     PAGE_RELOAD("$page_reload"),
     NEW_WEEK("$new_week"),
+    GET_RESOURCE("$get_resource@:"),
+    SET_REQUEST("$set_request@:"),
+    GET_REQUEST("$get_request@:"),
     ;
     final String command;
 
@@ -32,6 +35,10 @@ public enum BroadcasterCommand {
 
     public static String getData(String msg) {
         return msg.split("@:")[1];
+    }
+
+    public static String[] getFullData(String msg) {
+        return msg.split("@:")[1].split(":=:");
     }
 
     public static boolean hasData(String msg) {

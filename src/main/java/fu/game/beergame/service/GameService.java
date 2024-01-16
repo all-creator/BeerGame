@@ -21,4 +21,8 @@ public class GameService {
     public Game getFetch(Game game) {
         return gameRepository.findFetch(game.getId());
     }
+
+    public Game getFetchItems(Game game) {
+        return gameRepository.findFetchItems(game.getId());
+    }
 }

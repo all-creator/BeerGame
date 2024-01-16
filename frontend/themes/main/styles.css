@@ -19,7 +19,7 @@
 }
 
 .card_anim_left {
-    animation: card_flow_to_left .5s cubic-bezier(1, 0, 1, 1);
+    animation: card_flow_from_left .5s cubic-bezier(1, 0, 1, 1);
 }
 
 @keyframes card_flow_to_right {
@@ -39,7 +39,7 @@
     }
 }
 
-@keyframes card_flow_to_left {
+@keyframes card_flow_from_left {
     0% {
         opacity: 1;
     }
@@ -48,7 +48,7 @@
         opacity: 0;
     }
     51% {
-        transform: translateX(1000px);
+        transform: translateX(-1000px);
         opacity: 0;
     }
     100% {

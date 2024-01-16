@@ -35,4 +35,8 @@ public class StreamItem {
         accumulators.add(accumulator);
         return this;
     }
+
+    public Accumulator getAccumulator(String name) {
+        return accumulators.stream().filter(a -> a.getName().equals(name)).findFirst().orElseThrow();
+    }
 }

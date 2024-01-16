@@ -3,6 +3,7 @@ package fu.game.beergame.service;
 import fu.game.beergame.common.AccumulatorType;
 import fu.game.beergame.common.BroadcasterCommand;
 import fu.game.beergame.common.SessionStatus;
+import fu.game.beergame.common.TypeOfPlayer;
 import fu.game.beergame.model.Game;
 import fu.game.beergame.model.Player;
 import fu.game.beergame.model.Session;
@@ -74,33 +75,45 @@ public class SessionService {
         session.setGame(game);
         gameService.save(game);
         sessionRepository.save(session);
-        // init accumulators
-        session.getPlayers().forEach(player -> {
-            game.addAccumulator(accumulatorRepository.save(new Accumulator(player, game, AccumulatorType.RESOURCE.getName(), 12)));
-            game.addAccumulator(accumulatorRepository.save(new Accumulator(player, game, AccumulatorType.WEEK.getName(), 1)));
-            game.addAccumulator(accumulatorRepository.save(new Accumulator(player, game, AccumulatorType.OVERFLOW.getName(), 0)));
-            game.addAccumulator(accumulatorRepository.save(new Accumulator(player, game, AccumulatorType.REQUEST.getName(), 0)));
-        });
+
         // init streams
         // newWeek stream
-        game.addStream(gameStreamRepository.save(new GameStream("newWeek", () -> {}, BroadcasterCommand.NEW_WEEK.getCommand() + game.getCons(), BroadcasterCommand.PAGE_RELOAD.getCommand(), game)));
+        final GameStream newWeek = gameStreamRepository.save(new GameStream("newWeek", () -> {},
+                BroadcasterCommand.NEW_WEEK.getCommand() + game.getCons(), BroadcasterCommand.PAGE_RELOAD.getCommand(), game));
+        game.addStream(newWeek);
         // newTurn stream
-        game.addStream(gameStreamRepository.save(new GameStream("newTurn", () -> {}, null, BroadcasterCommand.NEXT_TURN.getCommand(), game)));
+        game.addStream(gameStreamRepository.save(new GameStream("newTurn", () -> {},
+                null, BroadcasterCommand.NEXT_TURN.getCommand(), game)));
+
+        // init accumulators
+        session.getPlayers().forEach(player -> {
+            Accumulator accumulator = accumulatorRepository.save(new Accumulator(player, game, AccumulatorType.RESOURCE.getName(), 12));
+            game.addAccumulator(accumulator);
+            newWeek.addAccumulator(accumulator);
+            accumulator = accumulatorRepository.save(new Accumulator(player, game, AccumulatorType.WEEK.getName(), 1));
+            game.addAccumulator(accumulator);
+            newWeek.addAccumulator(accumulator);
+            accumulator = accumulatorRepository.save(new Accumulator(player, game, AccumulatorType.OVERFLOW.getName(), 0));
+            game.addAccumulator(accumulator);
+            newWeek.addAccumulator(accumulator);
+            accumulator = accumulatorRepository.save(new Accumulator(player, game, AccumulatorType.REQUEST.getName(), 0));
+            game.addAccumulator(accumulator);
+            newWeek.addAccumulator(accumulator);
+        });
+        gameStreamRepository.save(newWeek);
+
         // init items
-        game.addStreamItem(streamItemRepository.save(new StreamItem("seller_shelf_in_1", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("seller_shelf_out_1", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("seller_shelf_in_2", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("seller_shelf_out_2", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("provider_shelf_in_1", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("provider_shelf_out_1", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("provider_shelf_in_2", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("provider_shelf_out_2", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("wholesaler_shelf_in_1", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("wholesaler_shelf_out_1", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("wholesaler_shelf_in_2", game)));
-        game.addStreamItem(streamItemRepository.save(new StreamItem("wholesaler_shelf_out_2", game)));
+        game.addStreamItem(streamItemRepository.save(new StreamItem(TypeOfPlayer.SELLER + "1", game)));
+        game.addStreamItem(streamItemRepository.save(new StreamItem(TypeOfPlayer.SELLER + "2", game)));
+        game.addStreamItem(streamItemRepository.save(new StreamItem(TypeOfPlayer.PROVIDER + "1", game)));
+        game.addStreamItem(streamItemRepository.save(new StreamItem(TypeOfPlayer.PROVIDER + "2", game)));
+        game.addStreamItem(streamItemRepository.save(new StreamItem(TypeOfPlayer.WHOLESALER + "1", game)));
+        game.addStreamItem(streamItemRepository.save(new StreamItem(TypeOfPlayer.WHOLESALER + "2", game)));
+        game.addStreamItem(streamItemRepository.save(new StreamItem(TypeOfPlayer.FABRIC + "1", game)));
+        game.addStreamItem(streamItemRepository.save(new StreamItem(TypeOfPlayer.FABRIC + "2", game)));
+        game.getItems().stream().filter(i -> i.getName().endsWith("2")).forEach(item -> item.addAccumulator(accumulatorRepository.save(new Accumulator(item, game, AccumulatorType.RESOURCE.getName(), 0))));
         game.getItems().stream().filter(i -> i.getName().endsWith("2")).forEach(item -> item.addAccumulator(accumulatorRepository.save(new Accumulator(item, game, AccumulatorType.REQUEST.getName(), 0))));
-        game.getItems().stream().filter(i -> i.getName().endsWith("1")).forEach(item -> item.addAccumulator(accumulatorRepository.save(new Accumulator(item, game, AccumulatorType.REQUEST.getName(), 4))));
+        game.getItems().stream().filter(i -> i.getName().endsWith("1")).forEach(item -> item.addAccumulator(accumulatorRepository.save(new Accumulator(item, game, AccumulatorType.RESOURCE.getName(), 4))));
         gameService.save(game);
     }
 

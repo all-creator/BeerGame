@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @NoArgsConstructor
 @Table(name = "game_stream")
@@ -22,6 +25,10 @@ public class GameStream {
 
     @Transient
     private Runnable stream;
+
+    @Getter
+    @OneToMany(fetch = FetchType.LAZY)
+    Set<Accumulator> accumulators = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name="game_id", nullable=false)
@@ -44,5 +51,9 @@ public class GameStream {
     public GameStream setStream(Runnable stream) {
         this.stream = stream;
         return this;
+    }
+
+    public void addAccumulator(Accumulator accumulator) {
+        accumulators.add(accumulator);
     }
 }

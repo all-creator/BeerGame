@@ -16,6 +16,12 @@ public class NotificationUtils {
         n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
+    public static void notifySuccess(String message, int duration) {
+        var n = Notification.show(message);
+        n.setDuration(duration);
+        n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+
     public static void notifyMessage(String message, int time) {
         var n = Notification.show(message);
         n.setDuration(time);
